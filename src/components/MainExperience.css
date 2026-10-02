@@ -1,0 +1,1007 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   RIGHTMOVE — MainExperience.css
+   ROOT CAUSE FIX NOTES embedded in comments.
+══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Wrapper ─────────────────────────────────────────────────────────────────
+   ROOT CAUSE FIX (BUG-08):
+   NO overflow:hidden here. overflow:hidden on a positioned ancestor breaks
+   position:fixed children in Safari and some WebKit contexts.
+   Horizontal clip is handled at html/body level in globals.css.
+*/
+.mc-wrapper {
+  position: relative;
+  width: 100%;
+  background-color: var(--color-black);
+  color: var(--color-white);
+  font-family: var(--font-primary);
+}
+
+/* ── Canvas particles ────────────────────────────────────────────────────────*/
+.cinematic-particles {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2;           /* above background, below everything */
+  opacity: 0.45;
+  mix-blend-mode: screen;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SYSTEM A — Phase 1 Fixed Overlay
+   ROOT CAUSE FIX (BUG-08, BUG-09, BUG-10):
+   • position:fixed — not clipped by any ancestor overflow
+   • z-index:100 — above scroll-track (z:10) and particles (z:2)
+   • Uses flexbox centering for all children so NO child needs CSS translate
+     (GSAP can animate scale/opacity/y without fighting a base transform)
+══════════════════════════════════════════════════════════════════════════════ */
+.p1-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+  /* Starts at opacity:1 — GSAP will set all children to opacity:0 immediately */
+  background: var(--color-black);
+}
+
+/* .p1-env — futuristic environment background layer */
+.p1-env {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0; /* GSAP controls */
+}
+
+/* Energy line — starts at left:0 so scaleX growth is visible immediately.
+   FIX #4: was left:-30% which caused the streak to be clipped/invisible
+   during the scaleX:0→1 phase. Now the right tip appears from the left
+   edge of screen and sweeps across as x moves to 110vw. */
+.p1-energy-line {
+  position: absolute;
+  left: 0;            /* FIX #4: start at viewport left edge (was -30%) */
+  top: 50%;
+  margin-top: -2px;
+  width: 45vw;        /* wider for more visible streak */
+  height: 4px;
+  background: linear-gradient(to right, transparent 0%, var(--color-cyan) 40%, #fff 100%);
+  box-shadow: 0 0 16px var(--color-cyan), 0 0 48px var(--color-cyan);
+  transform-origin: left center;
+  opacity: 0;
+  z-index: 10;
+  will-change: transform, opacity;
+}
+
+/* Arrow glow halo.
+   FIX #8: Centered via inset:0 + margin:auto on position:absolute.
+   This requires explicit width+height (both set below) and no CSS transform,
+   so GSAP can animate scale/opacity without fighting a base translate. */
+.p1-arrow-glow {
+  position: absolute;
+  inset: 0;           /* FIX #8: stretch to container bounds */
+  margin: auto;       /* FIX #8: auto margin centers within inset:0 */
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,210,255,0.4) 0%, transparent 65%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9;
+  will-change: transform, opacity;
+  /* No CSS transform — GSAP animates scale freely */
+}
+
+/* Arrow wrapper — flex-centered by p1-container, GSAP animates scale/opacity */
+/* ROOT CAUSE FIX (BUG-09): Wrapper has NO CSS transform.
+   GSAP sets scale on this element. Inner SVG untouched by GSAP. */
+.p1-arrow-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  filter: drop-shadow(0 0 24px var(--color-cyan));
+  will-change: transform, opacity;
+}
+
+/* Logo — flex-centered, GSAP animates opacity + y */
+.p1-logo {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  z-index: 10;
+  opacity: 0;
+  /* No CSS transform — GSAP uses y (translateY only) */
+  will-change: transform, opacity;
+}
+
+/* WE MOVE BRANDS FORWARD — flex-centered, GSAP animates opacity + scale */
+.p1-wemove {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  z-index: 10;
+  opacity: 0;
+  width: 90vw;
+  max-width: 920px;
+  will-change: transform, opacity;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SYSTEM B — Scroll Track + Camera Panel
+   ROOT CAUSE FIX (double-pinning):
+   • scroll-track provides the scroll distance (height set via JS constant)
+   • camera-panel is position:sticky — CSS handles the visual pinning
+   • NO gsap pin:true on the scroll-track ScrollTrigger
+   • This eliminates the double-height dead-scroll bug
+══════════════════════════════════════════════════════════════════════════════ */
+.scroll-track {
+  position: relative;
+  width: 100%;
+  /* height set dynamically via style prop in JSX */
+  z-index: 10;
+  background: transparent;
+}
+
+/* Camera panel — the "viewport" that stays fixed as scroll-track scrolls */
+.camera-panel {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Perspective root for 3D depth transforms */
+.perspective-root {
+  perspective: 900px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+/* ── Ambient Background (always visible, no GSAP touches it) ──────────────── */
+.ambient-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── SVG Energy Path ──────────────────────────────────────────────────────── */
+.energy-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.energy-path {
+  opacity: 0;
+  will-change: stroke-dashoffset, opacity;
+}
+
+/* ── Final CTA Glow ───────────────────────────────────────────────────────── */
+.final-glow-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-electric-blue) 0%, transparent 70%);
+  filter: blur(70px);
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: 1;
+  will-change: transform, opacity;
+}
+
+/* ── Scene Nodes ─────────────────────────────────────────────────────────────
+   ROOT CAUSE FIX (BUG-09): scene-node fills the full camera-panel.
+   Children are centered via flexbox. NO CSS translate on the scene-node itself.
+   GSAP animates z / opacity / filter / scale on .scene-node directly.
+   The flex centering survives any GSAP transform because GSAP adds translateZ
+   to the matrix WITHOUT removing the parent's flex layout.
+*/
+.scene-node {
+  position: absolute;
+  inset: 0;                /* fill the camera-panel exactly */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  opacity: 0;              /* GSAP controls visibility */
+  z-index: 5;
+  will-change: transform, opacity, filter;
+  transform-style: preserve-3d;
+}
+
+/* ── Phase 1 Environment Elements ────────────────────────────────────────────*/
+.absolute-fill {
+  position: absolute;
+  inset: 0;
+}
+
+.grid-floor {
+  position: absolute;
+  top: 55%;
+  left: -50%;
+  width: 200%;
+  height: 160%;
+  background-image:
+    linear-gradient(rgba(0,210,255,0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,210,255,0.18) 1px, transparent 1px);
+  background-size: 80px 80px;
+  transform: rotateX(68deg);
+  animation: gridScroll 7s linear infinite;
+  opacity: 0.45;
+}
+.grid-floor--dim {
+  opacity: 0.12;   /* ambient bg variant — dimmer */
+}
+@keyframes gridScroll {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 80px; }
+}
+
+.radial-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 42%, transparent 25%, var(--color-black) 72%);
+  pointer-events: none;
+}
+
+/* ── Funnel Node ─────────────────────────────────────────────────────────── */
+.funnel-node {
+  width: clamp(4.5rem, 8vw, 7.5rem);
+  height: clamp(4.5rem, 8vw, 7.5rem);
+  border-radius: 50%;
+  border: 1.5px solid var(--color-cyan);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: clamp(1rem, 3vw, 2rem);
+  box-shadow: inset 0 0 14px rgba(0,210,255,0.4), 0 0 36px rgba(0,210,255,0.22);
+  flex-shrink: 0;
+}
+.funnel-node span {
+  color: var(--color-cyan);
+  font-family: monospace;
+  font-weight: 700;
+  font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+  text-shadow: 0 0 8px var(--color-cyan);
+}
+
+/* ── Ecosystem Flow ──────────────────────────────────────────────────────── */
+.eco-flow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1.25rem;
+  max-width: 52rem;
+  font-family: monospace;
+  font-size: clamp(0.85rem, 1.4vw, 1.15rem);
+  color: #9ca3af;
+  line-height: 2;
+}
+.eco-flow span:hover { color: var(--color-white); transition: color 0.3s; }
+
+/* ── CTA Button ──────────────────────────────────────────────────────────── */
+.cta-btn {
+  display: inline-block;
+  padding: clamp(1rem, 2vw, 1.5rem) clamp(2rem, 5vw, 4rem);
+  border: 1.5px solid var(--color-cyan);
+  border-radius: 9999px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(12px);
+  color: var(--color-cyan);
+  font-family: var(--font-primary);
+  font-size: clamp(1rem, 1.8vw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-decoration: none;
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: 0 0 40px rgba(0,210,255,0.22), inset 0 0 18px rgba(0,210,255,0.14);
+  transition: background 0.4s, color 0.4s, box-shadow 0.4s;
+}
+.cta-btn:hover {
+  background: var(--color-cyan);
+  color: var(--color-black);
+  box-shadow: 0 0 80px rgba(0,210,255,0.7);
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+.logo-text {
+  font-size: clamp(2.8rem, 6.5vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  color: var(--color-white);
+}
+.tag-text {
+  font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  margin-top: 0.75rem;
+}
+.hero-text {
+  font-size: clamp(2.2rem, 5.5vw, 5rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+.display-text {
+  font-size: clamp(2.5rem, 6.5vw, 6rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+.large-text {
+  font-size: clamp(1.8rem, 3.5vw, 3.5rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+.body-text {
+  font-size: clamp(1.1rem, 2vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+}
+
+/* ── Colour utilities ────────────────────────────────────────────────────── */
+.text-white       { color: var(--color-white); }
+.text-gray        { color: #9ca3af; }
+.text-gray-light  { color: #d1d5db; }
+.font-black       { font-weight: 900; }
+
+.text-grad-cyan {
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-image: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-electric-blue) 100%);
+}
+.text-grad-white {
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-image: linear-gradient(to bottom, var(--color-white) 0%, #666 100%);
+}
+
+/* ── Glow utilities ──────────────────────────────────────────────────────── */
+.glow-white  { text-shadow: 0 0 22px rgba(255,255,255,0.35); }
+.glow-cyan   { color: var(--color-cyan); text-shadow: 0 0 14px rgba(0,210,255,0.55); }
+
+/* ── Spacing ─────────────────────────────────────────────────────────────── */
+.mb-sm  { margin-bottom: 0.75rem; }
+.mb-md  { margin-bottom: 1.5rem; }
+.mb-xl  { margin-bottom: 3rem; }
+.mt-sm  { margin-top: 0.75rem; }
+
+/* ── Reduced Motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .grid-floor { animation: none; }
+  .cinematic-particles { display: none; }
+  .scene-node { will-change: auto; }
+  .p1-wemove, .p1-arrow-wrapper, .p1-energy-line { will-change: auto; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   OFFICIAL LOGO — Phase 1 responsive image treatment
+══════════════════════════════════════════════════════════════════════════════ */
+
+/* Logo image — responsive width, aspect-ratio preserved auto */
+.p1-logo-img {
+  display: block;
+  width: clamp(220px, 38vw, 540px);
+  height: auto;
+  max-width: 90vw;
+  aspect-ratio: auto;           /* never stretch */
+  object-fit: contain;
+  /* Subtle white glow to make it pop on dark background */
+  filter: drop-shadow(0 0 28px rgba(255,255,255,0.18))
+          drop-shadow(0 0 60px rgba(0,140,255,0.22));
+  will-change: filter, opacity;
+}
+
+/* Tablet: slightly smaller */
+@media (max-width: 1024px) {
+  .p1-logo-img {
+    width: clamp(180px, 34vw, 420px);
+  }
+}
+
+/* Mobile: comfortably visible, never cropped */
+@media (max-width: 767px) {
+  .p1-logo-img {
+    width: clamp(160px, 72vw, 320px);
+    filter: drop-shadow(0 0 16px rgba(255,255,255,0.22))
+            drop-shadow(0 0 36px rgba(0,140,255,0.28));
+  }
+}
+
+/* Tiny 320px: ensure it never touches edges */
+@media (max-width: 380px) {
+  .p1-logo-img {
+    width: clamp(140px, 80vw, 280px);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SAFE AREA INSETS — notch / home bar / browser UI on mobile
+══════════════════════════════════════════════════════════════════════════════ */
+
+.p1-container {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.camera-panel {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   GLOBAL OVERFLOW GUARD — prevents horizontal scrollbar on ANY device
+══════════════════════════════════════════════════════════════════════════════ */
+
+/* Overflow guard: ONLY on mc-wrapper (does not break sticky chain).
+   DO NOT add overflow-x:hidden to .scroll-track or .camera-panel —
+   it breaks position:sticky on .camera-panel (CSS spec: sticky requires
+   overflow:visible on ALL ancestors between it and the scroll container). */
+.mc-wrapper {
+  max-width: 100vw;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PHASE 1 — Responsive composition
+══════════════════════════════════════════════════════════════════════════════ */
+
+/* WE MOVE BRANDS FORWARD — responsive container */
+.p1-wemove {
+  width: min(90vw, 920px);
+  max-width: 90vw;
+  padding: 0 clamp(0.5rem, 3vw, 2rem);
+}
+
+/* p1-arrow: scale SVG responsively */
+.p1-arrow-wrapper svg {
+  width: clamp(80px, 12vw, 140px);
+  height: clamp(80px, 12vw, 140px);
+}
+
+.p1-arrow-glow {
+  width: clamp(180px, 30vw, 320px);
+  height: clamp(180px, 30vw, 320px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TABLET — 600px–1024px
+══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .scene-has-visual {
+    gap: clamp(1.5rem, 3vw, 3rem);
+    padding: clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 5vw, 5rem) !important;
+  }
+
+  .srv-text {
+    max-width: clamp(200px, 38vw, 360px);
+  }
+
+  .media-float {
+    max-width: clamp(240px, 44vw, 480px);
+  }
+
+  .media-float--sm {
+    max-width: clamp(160px, 25vw, 320px);
+  }
+
+  .p3-digital-layout {
+    padding: clamp(1rem, 3vw, 3rem) clamp(1rem, 4vw, 4rem) !important;
+  }
+
+  /* Perspective: reduce depth on tablet */
+  .perspective-root {
+    perspective: 720px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   MOBILE — ≤767px (portrait phones)
+══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* Phase 1: reduce perspective depth on mobile */
+  .p1-container {
+    perspective: 500px;
+  }
+
+  /* Reduce scene perspective — avoids Z extreme on small screens */
+  .perspective-root {
+    perspective: 600px;
+  }
+
+  /* Mobile grid floor — reduce scale to prevent overflow */
+  .grid-floor {
+    left: -20%;
+    width: 140%;
+  }
+
+  /* Scene layout: stack vertically */
+  .scene-has-visual {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Keep text above visual on all orientations */
+  .scene-visual-left {
+    flex-direction: column !important;
+  }
+
+  .srv-text {
+    max-width: 100%;
+    flex: none;
+    order: 1;
+  }
+
+  .srv-visual {
+    order: 2;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  /* Flatten 3D tilt on mobile — avoids rendering artifacts */
+  .media-float,
+  .media-float--tilt-left,
+  .media-float--tilt-right,
+  .media-float--wide {
+    transform: perspective(500px) rotateY(0deg) rotateX(1deg) translateZ(0);
+    max-width: 100%;
+    max-height: 50vw;          /* never taller than half viewport */
+  }
+
+  /* Hide visual on very short landscape phones */
+  @media (max-height: 600px) {
+    .srv-visual { display: none; }
+  }
+
+  /* Digital 3-up: single column */
+  .digital-media-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .media-float--sm,
+  .media-float--mid,
+  .media-float--back {
+    max-width: 90vw;
+    transform: perspective(500px) rotateY(0deg) rotateX(0deg);
+    margin-top: 0;
+    opacity: 1;
+  }
+
+  .p3-digital-layout {
+    padding: 1rem 1.25rem !important;
+    gap: 1rem;
+  }
+
+  /* Ecosystem flow: tighter on mobile */
+  .eco-flow {
+    gap: 0.4rem 0.6rem;
+    font-size: clamp(0.75rem, 3.5vw, 1rem);
+  }
+
+  /* CTA button: ensure it doesn't clip edges */
+  .cta-btn {
+    letter-spacing: 0.12em;
+    width: min(90vw, 360px);
+    text-align: center;
+    padding: 1rem 1.5rem;
+  }
+
+  /* funnel node: smaller on mobile */
+  .funnel-node {
+    width: clamp(3.5rem, 14vw, 5.5rem);
+    height: clamp(3.5rem, 14vw, 5.5rem);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TINY MOBILE — ≤380px (320px and 360px phones)
+══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .scene-has-visual {
+    padding: 1rem 0.75rem !important;
+    gap: 0.75rem;
+  }
+
+  /* On 320px hide inline visual — background still visible */
+  .srv-visual { display: none; }
+
+  .hero-text {
+    font-size: clamp(1.7rem, 8.5vw, 2.5rem);
+  }
+
+  .display-text {
+    font-size: clamp(1.8rem, 9vw, 2.8rem);
+  }
+
+  .eco-flow {
+    gap: 0.3rem 0.5rem;
+    font-size: clamp(0.7rem, 3.8vw, 0.9rem);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   LANDSCAPE PHONES — short + wide (e.g. 812×375, 932×430)
+══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
+  .p1-container {
+    justify-content: center;
+    padding: 0.5rem 2rem;
+  }
+
+  .p1-logo-img {
+    width: clamp(140px, 28vw, 300px);
+  }
+
+  .p1-wemove {
+    width: min(80vw, 600px);
+  }
+
+  .hero-text {
+    font-size: clamp(1.4rem, 5vw, 2.8rem);
+  }
+
+  /* Hide visual panels in landscape-short to keep text readable */
+  .srv-visual { display: none; }
+
+  .scene-has-visual {
+    flex-direction: column !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .p1-arrow-wrapper svg {
+    width: 60px;
+    height: 60px;
+  }
+
+  .p1-arrow-glow {
+    width: 140px;
+    height: 140px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   LANDSCAPE TABLET — e.g. iPad landscape (1024×768, 1180×820)
+══════════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1180px) and (orientation: landscape) {
+  .scene-has-visual {
+    padding: clamp(1rem, 2.5vw, 2rem) clamp(2rem, 6vw, 6rem) !important;
+  }
+
+  .media-float {
+    max-width: clamp(240px, 40vw, 440px);
+  }
+
+  .hero-text {
+    font-size: clamp(1.8rem, 4vw, 3.5rem);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   VERY WIDE SCREENS — 1920px+ (large desktops, 2560×1440)
+══════════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1920px) {
+  .media-float {
+    max-width: clamp(480px, 38vw, 720px);
+  }
+
+  .scene-has-visual {
+    gap: 6rem;
+    padding: 2rem 14vw !important;
+  }
+
+  /* Deeper perspective on large screens — more cinematic */
+  .perspective-root {
+    perspective: 1200px;
+  }
+
+  .p1-logo-img {
+    width: clamp(480px, 30vw, 680px);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+══════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .grid-floor { animation: none; }
+  .cinematic-particles { display: none; }
+  .scene-node { will-change: auto; }
+  .p1-wemove, .p1-arrow-wrapper, .p1-energy-line { will-change: auto; }
+  .media-float { transition: none; }
+  .p1-logo-img { filter: none; }
+}
+
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   VISUAL MEDIA INTEGRATION — Phase 2 & Phase 3
+   Floating 3D media panel system.
+   Architecture rule: ALL visuals live inside their .scene-node parent so they
+   enter/exit automatically with the existing GSAP depthMap() — no new
+   ScrollTriggers are created. The camera-panel perspective context applies.
+══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Scene 2-column layout ──────────────────────────────────────────────── */
+/* Overrides .scene-node (column, centered) for scenes that have a visual panel */
+.scene-has-visual {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: left !important;
+  gap: clamp(2rem, 5vw, 5rem);
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(2rem, 8vw, 10rem) !important;
+}
+
+/* Alternate: visual on left, text on right */
+.scene-visual-left {
+  flex-direction: row-reverse !important;
+}
+
+/* Text column — constrained width keeps typography tight */
+.srv-text {
+  flex: 0 0 auto;
+  max-width: clamp(240px, 32vw, 420px);
+  z-index: 1;
+}
+
+/* Visual column — flexible, centered */
+.srv-visual {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0; /* prevent flex blowout */
+}
+
+/* ── Floating 3D media panel ─────────────────────────────────────────────── */
+.media-float {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 210, 255, 0.16);
+  box-shadow:
+    0 0 0 1px rgba(0, 210, 255, 0.06),
+    0 0 60px rgba(0, 210, 255, 0.08),
+    0 8px 40px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: rgba(0, 5, 18, 0.55);
+  backdrop-filter: blur(4px);
+  /* Default 3D tilt — slight perspective angle toward viewer */
+  transform: perspective(900px) rotateY(-8deg) rotateX(2deg) translateZ(0px);
+  transition: transform 0.8s ease;
+  will-change: transform;
+  max-width: clamp(280px, 46vw, 580px);
+  width: 100%;
+}
+
+/* Tilt left (visual on right side of text) */
+.media-float--tilt-left {
+  transform: perspective(900px) rotateY(-10deg) rotateX(3deg) translateZ(0px);
+}
+
+/* Tilt right (visual on left side of text, facing inward) */
+.media-float--tilt-right {
+  transform: perspective(900px) rotateY(10deg) rotateX(3deg) translateZ(0px);
+}
+
+/* Wider panel for landscape mockups (video ads, etc.) */
+.media-float--wide {
+  max-width: clamp(300px, 52vw, 640px);
+  transform: perspective(900px) rotateY(-6deg) rotateX(2deg) translateZ(0px);
+}
+
+/* Smaller panel — for the 3-up digital layout */
+.media-float--sm {
+  max-width: clamp(200px, 28vw, 380px);
+  border-radius: 10px;
+}
+
+/* Stagger depths for the 3-up row */
+.media-float--mid {
+  transform: perspective(900px) rotateY(0deg) rotateX(-1deg) translateZ(20px);
+  margin-top: -1.5rem;
+  z-index: 2;
+}
+.media-float--back {
+  transform: perspective(900px) rotateY(8deg) rotateX(2deg) translateZ(-10px);
+  opacity: 0.88;
+}
+
+.media-float img {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0.92;
+  border-radius: inherit;
+}
+
+/* Subtle glow underlay behind the panel */
+.media-float::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 210, 255, 0.04) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Phase 3 Digital — stacked text + 3-panel media row ─────────────────── */
+.p3-digital-layout {
+  flex-direction: column !important;
+  gap: 2rem;
+  padding: clamp(2rem, 4vw, 4rem) clamp(2rem, 6vw, 6rem) !important;
+}
+
+.digital-text-row {
+  text-align: center;
+}
+
+.digital-media-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  width: 100%;
+}
+
+/* ── Responsive breakpoints ──────────────────────────────────────────────── */
+
+/* Tablet / small desktop — tighten panels */
+@media (max-width: 1024px) {
+  .scene-has-visual {
+    gap: clamp(1.5rem, 3vw, 3rem);
+    padding: clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 5vw, 5rem) !important;
+  }
+
+  .srv-text {
+    max-width: clamp(200px, 38vw, 360px);
+  }
+
+  .media-float {
+    max-width: clamp(240px, 44vw, 480px);
+  }
+
+  .media-float--sm {
+    max-width: clamp(160px, 25vw, 320px);
+  }
+
+  .p3-digital-layout {
+    padding: clamp(1rem, 3vw, 3rem) clamp(1rem, 4vw, 4rem) !important;
+  }
+}
+
+/* Mobile — stack vertically; hide visuals on very small screens to prevent
+   text collision. Visuals re-appear on tablet+. */
+@media (max-width: 767px) {
+  .scene-has-visual {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 1.5rem;
+    padding: 1.5rem 1.25rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* On small screens, keep visual below text */
+  .scene-visual-left {
+    flex-direction: column !important;
+  }
+
+  .srv-text {
+    max-width: 100%;
+    flex: none;
+    order: 1;
+  }
+
+  .srv-visual {
+    order: 2;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+
+  /* Reduce 3D tilt on mobile — avoids rendering artifacts */
+  .media-float,
+  .media-float--tilt-left,
+  .media-float--tilt-right,
+  .media-float--wide {
+    transform: perspective(600px) rotateY(0deg) rotateX(1deg) translateZ(0);
+    max-width: 100%;
+  }
+
+  /* On very small screens hide the visual panel to keep text readable */
+  @media (max-height: 700px) {
+    .srv-visual { display: none; }
+    .scene-has-visual { flex-direction: column !important; }
+  }
+
+  /* Digital 3-up becomes single column */
+  .digital-media-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .media-float--sm,
+  .media-float--mid,
+  .media-float--back {
+    max-width: 280px;
+    transform: perspective(600px) rotateY(0deg) rotateX(0deg);
+    margin-top: 0;
+    opacity: 1;
+  }
+
+  .p3-digital-layout {
+    padding: 1rem 1.25rem !important;
+  }
+}
+
+/* Tiny mobile (320px) — minimal padding, ensure no overflow */
+@media (max-width: 380px) {
+  .scene-has-visual {
+    padding: 1rem 0.75rem !important;
+    gap: 1rem;
+  }
+
+  .srv-visual { display: none; }
+}
+
+/* Very wide screens — extra depth for 3D panels */
+@media (min-width: 1920px) {
+  .media-float {
+    max-width: clamp(480px, 38vw, 720px);
+  }
+
+  .scene-has-visual {
+    gap: 6rem;
+    padding: 2rem 14vw !important;
+  }
+}
+

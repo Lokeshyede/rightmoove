@@ -1,0 +1,148 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   VisualEnvironment.css — Enhanced Cinematic Background System
+   z-index strategy: canvas=1, panels=1 (behind scroll-track z:10 and p1 z:100)
+   pointer-events: none throughout — zero interaction interference
+══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Root — fixed, full-viewport, behind everything ─────────────────────── */
+.ve-root {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  /* Isolate compositing context so mix-blend-mode only affects THIS layer */
+  isolation: isolate;
+}
+
+/* ── Canvas — atmospheric effects layer ─────────────────────────────────── */
+.ve-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* Screen blend: adds color onto dark background without washing it out */
+  mix-blend-mode: screen;
+  opacity: 0.94;
+  will-change: contents;
+}
+
+/* ── Floating image panels ───────────────────────────────────────────────── */
+.ve-panel {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  /* transform and opacity are driven every frame by the RAF loop */
+  will-change: transform, opacity;
+  /*
+   * Small opacity transition prevents perceptible "pop-in" on first frame.
+   * Transform has NO transition — JS drives it 60fps for smooth parallax.
+   */
+  transition: opacity 0.18s ease;
+}
+
+/* ── Panel inner — cinematic glass frame ─────────────────────────────────── */
+.ve-panel-inner {
+  border-radius: 12px;
+  overflow: hidden;
+  /* Base border — JS overrides with dynamic rim light via box-shadow */
+  border: 1px solid rgba(0, 210, 255, 0.10);
+  /* Default shadow (overridden by JS rim light when panel is visible) */
+  box-shadow:
+    0 0 0 1px rgba(0, 210, 255, 0.04),
+    0 14px 52px rgba(0, 0, 0, 0.68);
+  background: rgba(0, 4, 14, 0.48);
+  /*
+   * Glass reflection — subtle gradient on top edge simulates light
+   * hitting a tilted glass surface in 3D space
+   */
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.022) 0%,
+    rgba(0, 210, 255, 0.010)   8%,
+    transparent                 22%
+  );
+  backdrop-filter: blur(2px);
+  /* Smooth any JS box-shadow transition (rim light approach/leave) */
+  transition: box-shadow 0.08s ease;
+}
+
+/* ── Image treatment inside panel ───────────────────────────────────────── */
+.ve-panel-inner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+  /* Slight desaturation keeps images in the dark-navy palette */
+  filter: saturate(0.90) contrast(1.05) brightness(0.96);
+  opacity: 0.93;
+}
+
+/* ── Depth-layer variants (class added once via JS on init) ─────────────── */
+
+/* Far: dimmest, most desaturated — deep background layer */
+.ve-panel--far .ve-panel-inner img {
+  filter: saturate(0.80) contrast(1.10) brightness(0.88);
+  opacity: 0.88;
+}
+.ve-panel--far .ve-panel-inner {
+  border-color: rgba(0, 200, 255, 0.07);
+  background-color: rgba(0, 3, 10, 0.58);
+}
+
+/* Mid: standard mid-ground treatment */
+.ve-panel--mid .ve-panel-inner img {
+  filter: saturate(0.88) contrast(1.07) brightness(0.93);
+  opacity: 0.92;
+}
+
+/* Near: sharpest, most saturated — closest to camera */
+.ve-panel--near .ve-panel-inner img {
+  filter: saturate(0.94) contrast(1.04) brightness(0.98);
+  opacity: 0.96;
+}
+.ve-panel--near .ve-panel-inner {
+  border-color: rgba(0, 215, 255, 0.14);
+  background-color: rgba(0, 5, 18, 0.42);
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .ve-panel {
+    /* On mobile the JS only renders first 4 panels; ensure rest stay hidden */
+    max-width: min(300px, 82vw);
+  }
+
+  .ve-canvas {
+    /* Slightly softer on mobile — less visual competition with text */
+    opacity: 0.70;
+  }
+}
+
+/* ── Tablet ──────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .ve-canvas {
+    opacity: 0.80;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ve-panel {
+    /* Slow opacity-only transitions — no transforms animated */
+    transition: opacity 0.65s ease !important;
+  }
+
+  .ve-canvas {
+    /* Keep atmosphere but reduce intensity */
+    opacity: 0.40;
+  }
+
+  .ve-panel-inner {
+    /* Remove the transition — in reduced mode there's no rim light animation */
+    transition: none !important;
+  }
+}
