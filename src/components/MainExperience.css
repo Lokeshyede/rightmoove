@@ -154,6 +154,14 @@
   /* height set dynamically via style prop in JSX */
   z-index: 10;
   background: transparent;
+  /*
+   * MOBILE CTA FIX: Without padding-bottom, the max scroll position on mobile
+   * is (scrollHeight - viewportHeight). At 844px viewport, max scrollY ≈ 9956px,
+   * giving ScrollTrigger progress ≈ 0.922 — which never reaches p3-cta (at 0.944).
+   * padding-bottom: 100vh adds one full viewport of extra scroll room so progress=1.0
+   * is reachable. Camera-panel is sticky so this only adds dead scroll below the animation.
+   */
+  padding-bottom: 100vh;
 }
 
 /* Camera panel — the "viewport" that stays fixed as scroll-track scrolls */
@@ -341,31 +349,45 @@
   color: var(--color-white);
 }
 .tag-text {
-  font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+  /* min: 0.6rem is readable; 3.2vw@320=10px is fine on mobile */
+  font-size: clamp(0.6rem, 3.2vw, 0.85rem);
   font-weight: 700;
-  letter-spacing: 0.42em;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
   margin-top: 0.75rem;
 }
 .hero-text {
-  font-size: clamp(2.2rem, 5.5vw, 5rem);
+  /*
+   * Mobile-safe: min 1.7rem (27.2px) at 320px.
+   * "ATTENTION" 9 chars x ~16px avg = 144px — well within 320px.
+   */
+  font-size: clamp(1.7rem, 8.5vw, 5rem);
   font-weight: 900;
   line-height: 1.08;
   letter-spacing: -0.03em;
 }
 .display-text {
-  font-size: clamp(2.5rem, 6.5vw, 6rem);
+  /*
+   * Mobile-safe: min 1.65rem (26.4px) at 320px.
+   * "GOOGLE ADS" 10 chars fits. Multi-line headings split naturally.
+   */
+  font-size: clamp(1.65rem, 8vw, 6rem);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -0.04em;
 }
 .large-text {
-  font-size: clamp(1.8rem, 3.5vw, 3.5rem);
+  /*
+   * "CONNECTED ECOSYSTEM" 19 chars at min 1.55rem (24.8px):
+   * 19 x ~14px = 266px — fits 320px with padding.
+   */
+  font-size: clamp(1.55rem, 4.2vw, 3.5rem);
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 .body-text {
-  font-size: clamp(1.1rem, 2vw, 2rem);
+  /* min: 0.9rem readable on mobile */
+  font-size: clamp(0.9rem, 4vw, 2rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.5;
@@ -550,7 +572,20 @@
     width: 140%;
   }
 
-  /* Scene layout: stack vertically */
+  /* ── Phase 1 WE MOVE text: ensure it always fits ───────────────────── */
+  .p1-wemove {
+    width: min(88vw, 560px);
+    padding: 0 clamp(0.5rem, 2.5vw, 1.5rem);
+  }
+
+  /* WE MOVE hero on mobile must not overflow */
+  .p1-wemove .hero-text {
+    font-size: clamp(1.7rem, 8.2vw, 3.5rem);
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+
+  /* ── Scene layout: stack vertically ─────────────────────────────── */
   .scene-has-visual {
     flex-direction: column !important;
     text-align: center !important;
@@ -569,6 +604,18 @@
     max-width: 100%;
     flex: none;
     order: 1;
+  }
+
+  /* Service title: must not overflow at 320px */
+  .srv-text .display-text {
+    font-size: clamp(1.5rem, 7.5vw, 3.5rem);
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+
+  /* Service body text: keep readable */
+  .srv-text .body-text {
+    font-size: clamp(0.85rem, 3.8vw, 1.25rem);
   }
 
   .srv-visual {
@@ -620,18 +667,39 @@
     font-size: clamp(0.75rem, 3.5vw, 1rem);
   }
 
-  /* CTA button: ensure it doesn't clip edges */
+  /* ── CTA button: must fit comfortably at 320px ────────────────── */
   .cta-btn {
-    letter-spacing: 0.12em;
+    letter-spacing: 0.10em;
     width: min(90vw, 360px);
     text-align: center;
-    padding: 1rem 1.5rem;
+    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 1.5rem);
+    font-size: clamp(0.85rem, 4vw, 1.25rem);
   }
+
+  /* ── CTA headline: READY TO MOVE YOUR BUSINESS FORWARD? ─────── */
+  /* 3 lines at 320px: "READY TO MOVE" / "YOUR BUSINESS" / "FORWARD?" */
+  .p3-cta .display-text {
+    font-size: clamp(1.45rem, 7vw, 3.5rem);
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+
+  /* Spacing: less margin-bottom on mobile */
+  .mb-xl { margin-bottom: 1.75rem; }
 
   /* funnel node: smaller on mobile */
   .funnel-node {
     width: clamp(3.5rem, 14vw, 5.5rem);
     height: clamp(3.5rem, 14vw, 5.5rem);
+  }
+
+  /* CONNECTED ECOSYSTEM: ensure no overflow */
+  .p3-eco .large-text {
+    font-size: clamp(1.3rem, 6.5vw, 2.2rem);
+    text-align: center;
+    letter-spacing: 0.03em;
+    word-break: keep-all;
+    overflow-wrap: normal;
   }
 }
 
@@ -644,25 +712,56 @@
     gap: 0.75rem;
   }
 
-  /* On 320px hide inline visual — background still visible */
+  /* On 320px: hide inline visual (still has background VE) */
   .srv-visual { display: none; }
 
+  /* Typography: tighter on tiny screens */
   .hero-text {
-    font-size: clamp(1.7rem, 8.5vw, 2.5rem);
+    font-size: clamp(1.55rem, 8vw, 2.2rem);
   }
 
   .display-text {
-    font-size: clamp(1.8rem, 9vw, 2.8rem);
+    font-size: clamp(1.45rem, 7.5vw, 2.2rem);
+  }
+
+  .large-text {
+    font-size: clamp(1.2rem, 6.2vw, 1.8rem);
+    letter-spacing: 0.02em;
+  }
+
+  /* CONNECTED ECOSYSTEM at 320px — 19 chars, needs to fit
+   * At 5.8vw @ 320px = 18.56px, but letter-spacing 0.04em adds ~0.7px per char.
+   * 20 units × (18.56 + 0.74) = ~386px — too wide for 320px with 24px padding.
+   * Fix: zero letter-spacing, tighter size. 5vw @ 320 = 16px, 20 × 16 = 320px. Tight but fits.
+   */
+  .p3-eco .large-text {
+    font-size: clamp(0.95rem, 4.8vw, 1.4rem);
+    letter-spacing: 0 !important;
   }
 
   .eco-flow {
     gap: 0.3rem 0.5rem;
     font-size: clamp(0.7rem, 3.8vw, 0.9rem);
   }
+
+  /* CTA at 320px: compact padding, smaller font */
+  .cta-btn {
+    font-size: clamp(0.75rem, 3.8vw, 1rem);
+    letter-spacing: 0.08em;
+    padding: 0.75rem 1rem;
+    width: min(88vw, 300px);
+  }
+
+  .p3-cta .display-text {
+    font-size: clamp(1.3rem, 6.5vw, 2rem);
+  }
+
+  .mb-xl { margin-bottom: 1.25rem; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    LANDSCAPE PHONES — short + wide (e.g. 812×375, 932×430)
+   Only targets genuine phone landscape: max-height: 500px
 ══════════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 932px) and (orientation: landscape) and (max-height: 500px) {
   .p1-container {
@@ -671,15 +770,20 @@
   }
 
   .p1-logo-img {
-    width: clamp(140px, 28vw, 300px);
+    width: clamp(130px, 26vw, 280px);
   }
 
   .p1-wemove {
-    width: min(80vw, 600px);
+    width: min(80vw, 560px);
   }
 
+  /* Landscape headline: tighter */
   .hero-text {
-    font-size: clamp(1.4rem, 5vw, 2.8rem);
+    font-size: clamp(1.2rem, 4.5vw, 2.5rem);
+  }
+
+  .display-text {
+    font-size: clamp(1.1rem, 4vw, 2.2rem);
   }
 
   /* Hide visual panels in landscape-short to keep text readable */
@@ -687,17 +791,26 @@
 
   .scene-has-visual {
     flex-direction: column !important;
-    padding: 0.75rem 1rem !important;
+    padding: 0.5rem 1rem !important;
+    gap: 0.5rem;
   }
 
   .p1-arrow-wrapper svg {
-    width: 60px;
-    height: 60px;
+    width: 52px;
+    height: 52px;
   }
 
   .p1-arrow-glow {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
+  }
+
+  .mb-xl { margin-bottom: 1rem; }
+
+  /* CTA: compact in landscape */
+  .cta-btn {
+    padding: 0.6rem 1.5rem;
+    font-size: clamp(0.8rem, 3.5vw, 1rem);
   }
 }
 
@@ -918,8 +1031,8 @@
   }
 }
 
-/* Mobile — stack vertically; hide visuals on very small screens to prevent
-   text collision. Visuals re-appear on tablet+. */
+/* Mobile — stack vertically; visuals shown below text.
+   Only hide visuals on very short landscape screens. */
 @media (max-width: 767px) {
   .scene-has-visual {
     flex-direction: column !important;
@@ -930,7 +1043,7 @@
     justify-content: center !important;
   }
 
-  /* On small screens, keep visual below text */
+  /* Keep visual below text regardless of left/right layout */
   .scene-visual-left {
     flex-direction: column !important;
   }
@@ -957,10 +1070,9 @@
     max-width: 100%;
   }
 
-  /* On very small screens hide the visual panel to keep text readable */
-  @media (max-height: 700px) {
+  /* On very short screens (landscape phones) hide visual panel */
+  @media (max-height: 560px) {
     .srv-visual { display: none; }
-    .scene-has-visual { flex-direction: column !important; }
   }
 
   /* Digital 3-up becomes single column */
@@ -972,7 +1084,7 @@
   .media-float--sm,
   .media-float--mid,
   .media-float--back {
-    max-width: 280px;
+    max-width: min(280px, 80vw);
     transform: perspective(600px) rotateY(0deg) rotateX(0deg);
     margin-top: 0;
     opacity: 1;

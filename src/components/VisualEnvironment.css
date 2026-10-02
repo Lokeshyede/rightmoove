@@ -112,13 +112,25 @@
 /* ── Mobile ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .ve-panel {
-    /* On mobile the JS only renders first 4 panels; ensure rest stay hidden */
-    max-width: min(300px, 82vw);
+    /*
+     * Mobile panel overflow safety:
+     * - max-width via JS (PANELS_MOBILE widths) but CSS backstop here.
+     * - max-height: 40vw prevents portrait panels from becoming huge.
+     * - overflow:hidden clips any edge-case bleed.
+     */
+    max-width: min(56vw, 240px);
+    max-height: 40vw;
+    overflow: hidden;
+  }
+
+  .ve-panel-inner img {
+    max-height: 100%;
+    object-fit: cover;
   }
 
   .ve-canvas {
     /* Slightly softer on mobile — less visual competition with text */
-    opacity: 0.70;
+    opacity: 0.65;
   }
 }
 

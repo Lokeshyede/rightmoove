@@ -69,14 +69,18 @@ const CinematicParticles = () => {
     let w = (canvas.width = window.innerWidth);
     let h = (canvas.height = window.innerHeight);
 
+    // Reduce particle count on mobile for performance
+    const isMobile = w < 768;
+    const particleCount = isMobile ? 30 : 80;
+
     type Particle = { x: number; y: number; z: number; size: number; speed: number; alpha: number };
-    const pts: Particle[] = Array.from({ length: 80 }, () => ({
+    const pts: Particle[] = Array.from({ length: particleCount }, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
       z: Math.random() * 1000,
-      size: Math.random() * 1.8 + 0.4,
-      speed: Math.random() * 1.5 + 0.5,
-      alpha: Math.random() * 0.5 + 0.1,
+      size: Math.random() * 1.4 + 0.3,
+      speed: Math.random() * 1.2 + 0.4,
+      alpha: Math.random() * 0.45 + 0.08,
     }));
 
     let rid = 0;

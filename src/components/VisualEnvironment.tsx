@@ -98,6 +98,56 @@ interface Panel {
   cy: number;
 }
 
+interface PanelMobile {
+  left: string; top: string; width: string;
+  rotY: number; rotX: number;
+}
+
+/**
+ * Mobile-safe panel overrides.
+ * Desktop positions can put panels at 56%–76% left, which on 320–430px phones
+ * means the 220px+ wide panel overflows the right edge causing horizontal scroll.
+ * These overrides keep all panels within [2%..50%] on the left so they stay
+ * fully within the viewport at all phone widths ≥ 320px.
+ * INDEX matches PANELS array order exactly.
+ */
+const PANELS_MOBILE: PanelMobile[] = [
+  // 0 ENV02-a  meta-campaign top-right → top-left on mobile
+  { left:  '3%', top: '6%',  width: 'clamp(140px,38vw,200px)', rotY:  6, rotX: 2 },
+  // 1 ENV02-b  google-ads bottom-right → hidden (index>=4 on mobile already hidden by JS)
+  { left:  '3%', top: '52%', width: 'clamp(130px,36vw,190px)', rotY:  6, rotX: 2 },
+  // 2 ENV03   seo top-right → top-right safe
+  { left: '50%', top: '10%', width: 'clamp(140px,42vw,200px)', rotY: -5, rotX: 2 },
+  // 3 ENV04-a  meta near → left side
+  { left:  '3%', top:  '8%', width: 'clamp(160px,44vw,220px)', rotY:  8, rotX: 2 },
+  // 4 ENV04-b  google far → hidden on mobile (>= 4)
+  { left: '50%', top:  '6%', width: 'clamp(140px,40vw,200px)', rotY:  2, rotX: 2 },
+  // 5 ENV04-c  seo mid → hidden on mobile (>= 4)
+  { left: '52%', top: '32%', width: 'clamp(130px,38vw,185px)', rotY: -8, rotX: 2 },
+  // 6 ENV05   lead-gen near → right safe
+  { left: '50%', top: '12%', width: 'clamp(140px,42vw,200px)', rotY: -8, rotX: 3 },
+  // 7 ENV06-a  social near → left safe
+  { left:  '3%', top:  '7%', width: 'clamp(155px,44vw,215px)', rotY:  8, rotX: 2 },
+  // 8 ENV06-b  content far → hidden on mobile (>= 4)
+  { left: '48%', top: '38%', width: 'clamp(130px,38vw,185px)', rotY: -6, rotX: 2 },
+  // 9 ENV07-a  video near → right safe (clamped width)
+  { left: '48%', top:  '6%', width: 'clamp(150px,44vw,210px)', rotY: -5, rotX: 2 },
+  // 10 ENV07-b creative mid → left safe
+  { left:  '3%', top: '15%', width: 'clamp(145px,42vw,200px)', rotY:  7, rotX: 2 },
+  // 11 ENV08-a website near → left safe
+  { left:  '2%', top:  '6%', width: 'clamp(150px,44vw,210px)', rotY:  8, rotX: 3 },
+  // 12 ENV08-b app far → right safe
+  { left: '50%', top: '18%', width: 'clamp(135px,38vw,190px)', rotY: -7, rotX: 2 },
+  // 13 ENV08-c software far
+  { left: '20%', top: '44%', width: 'clamp(130px,36vw,185px)', rotY:  0, rotX: 2 },
+  // 14 ENV09-a meta tiny
+  { left:  '4%', top: '58%', width: 'clamp(90px,26vw,140px)',  rotY: 10, rotX: 3 },
+  // 15 ENV09-b social tiny
+  { left: '66%', top: '55%', width: 'clamp(85px,24vw,130px)',  rotY:-10, rotX: 3 },
+  // 16 ENV09-c website tiny
+  { left: '35%', top: '62%', width: 'clamp(80px,22vw,125px)',  rotY:  0, rotX: 2 },
+];
+
 const PANELS: Panel[] = [
   // ── ENV 02: Performance teasers ──────────────────────────────────────────────
   { src: '/media/rightmove/marketing/meta-campaign-01.jpg',
@@ -643,7 +693,7 @@ export default function VisualEnvironment() {
     });
 
     // ── Particle system ────────────────────────────────────────────────────────
-    const PC  = isMobile() ? 32 : 85;
+    const PC  = isMobile() ? 24 : 85;
     const pts = makeParticles(PC, window.innerWidth, window.innerHeight);
 
     // Cache inner elements for rim-light updates
@@ -691,34 +741,57 @@ export default function VisualEnvironment() {
       PANELS.forEach((panel, i) => {
         const el = panelRefs.current[i]; if (!el) return;
 
-        // Mobile: limit to first 4 panels
-        if (mob && i >= 4) { if (el.style.opacity !== '0') el.style.opacity = '0'; return; }
+        // Mobile: limit visible panels to avoid crowding + overflow.
+        // We show panels 0,2,3,6,7,9,11 (one per environment, left-side preferred)
+        const MOB_VISIBLE = new Set([0, 2, 3, 6, 7, 9, 11]);
+        if (mob && !MOB_VISIBLE.has(i)) {
+          if (el.style.opacity !== '0') el.style.opacity = '0';
+          return;
+        }
 
         const alpha = alphas[i];
         if (alpha < 0.008) { if (el.style.opacity !== '0') el.style.opacity = '0'; return; }
 
         // Camera parallax by depth — far moves less, near moves more
         const par  = PAR[panel.depth];
-        const camX = isReduced ? 0 : cam.x * par;
-        const camY = isReduced ? 0 : cam.y * par;
+        // Reduce camera movement on mobile to avoid drift-induced overflow
+        const camMult = mob ? 0.3 : 1.0;
+        const camX = isReduced ? 0 : cam.x * par * camMult;
+        const camY = isReduced ? 0 : cam.y * par * camMult;
 
-        // Drift
-        const dx = isReduced ? 0 : Math.sin(tSec * panel.driftSpd + panel.driftT) * panel.driftX;
-        const dy = isReduced ? 0 : Math.cos(tSec * panel.driftSpd * 0.78 + panel.driftT) * panel.driftY;
+        // Drift — reduce amplitude on mobile
+        const driftAmp = mob ? 0.35 : 1.0;
+        const dx = isReduced ? 0 : Math.sin(tSec * panel.driftSpd + panel.driftT) * panel.driftX * driftAmp;
+        const dy = isReduced ? 0 : Math.cos(tSec * panel.driftSpd * 0.78 + panel.driftT) * panel.driftY * driftAmp;
 
         // Approach boost: panel slightly scales up at peak visibility
         const peakFactor = smooth(panel.enter, panel.peak, p) * smooth(panel.exit, panel.peak, p);
         const scaleFinal = panel.scale * (1 + peakFactor * 0.035);
 
+        // On mobile use mobile-safe rotation (reduced) and mobile-safe perspective
+        const rotY = mob ? PANELS_MOBILE[i].rotY : panel.rotY;
+        const rotX = mob ? PANELS_MOBILE[i].rotX : panel.rotX;
+        // Reduce Z depth on mobile to avoid perspective clipping
+        const pz   = mob ? panel.z * 0.4 : panel.z;
+
         el.style.opacity   = alpha.toFixed(4);
         el.style.transform = [
-          'perspective(900px)',
-          `rotateY(${panel.rotY}deg)`,
-          `rotateX(${panel.rotX}deg)`,
-          `translateZ(${panel.z}px)`,
+          mob ? 'perspective(600px)' : 'perspective(900px)',
+          `rotateY(${rotY}deg)`,
+          `rotateX(${rotX}deg)`,
+          `translateZ(${pz}px)`,
           `translate(${(dx + camX).toFixed(2)}px, ${(dy + camY).toFixed(2)}px)`,
           `scale(${scaleFinal.toFixed(4)})`,
         ].join(' ');
+
+        // Apply mobile-safe left/top/width via inline style when on mobile
+        // (the initial CSS values come from the PANELS array which has desktop values)
+        if (mob) {
+          const mp = PANELS_MOBILE[i];
+          el.style.left  = mp.left;
+          el.style.top   = mp.top;
+          el.style.width = mp.width;
+        }
 
         // Dynamic rim light — brighter at peak, dims on enter/exit
         const inner = innerEls[i]; if (!inner) return;
