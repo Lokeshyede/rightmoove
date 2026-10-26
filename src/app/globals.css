@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-black: #070B12;
+  --color-brand-navy: #0B1220;
+  --color-brand-electric: #087BFF;
+  --color-brand-bright: #009DFF;
+  --color-brand-card: #111827;
+  --color-brand-muted: #A7B0C0;
+  --font-heading: var(--font-heading);
+  --font-sans: var(--font-sans);
+}
+
+:root {
+  --bg-black: #070B12;
+  --bg-navy: #0B1220;
+  --card-bg: #111827;
+  --blue-electric: #087BFF;
+  --blue-bright: #009DFF;
+  --text-primary: #FFFFFF;
+  --text-muted: #A7B0C0;
+}
+
+html {
+  background-color: var(--bg-black);
+  color: var(--text-primary);
+  scroll-behavior: auto; /* Lenis handles smooth scrolling */
+}
+
+body {
+  background-color: var(--bg-black);
+  color: var(--text-primary);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+  selection-background-color: #087BFF;
+  selection-color: #ffffff;
+}
+
+::selection {
+  background-color: #087BFF;
+  color: #FFFFFF;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #070B12;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #111827;
+  border-radius: 4px;
+  border: 1px solid rgba(8, 123, 255, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #087BFF;
+}
+
+/* Lenis smooth scrolling rules */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Cinematic Glow & Lighting Utilities */
+.glow-blue-sm {
+  box-shadow: 0 0 20px rgba(8, 123, 255, 0.25);
+}
+
+.glow-blue-md {
+  box-shadow: 0 0 45px rgba(8, 123, 255, 0.35);
+}
+
+.glow-blue-lg {
+  box-shadow: 0 0 80px rgba(0, 157, 255, 0.28);
+}
+
+.glow-text {
+  text-shadow: 0 0 25px rgba(8, 123, 255, 0.6);
+}
+
+.glass-nav {
+  background: rgba(7, 11, 18, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.85) 0%, rgba(11, 18, 32, 0.9) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(8, 123, 255, 0.4);
+  box-shadow: 0 10px 40px -10px rgba(8, 123, 255, 0.25);
+  transform: translateY(-4px);
+}
+
+/* Vignette overlay */
+.cinematic-vignette {
+  background: radial-gradient(ellipse at center, transparent 40%, #070B12 100%);
+}
+
+/* Ambient Blue Atmospheric Lighting */
+.ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  opacity: 0.35;
+  background: radial-gradient(circle, #087BFF 0%, rgba(0, 157, 255, 0.1) 70%, transparent 100%);
+}
+
+/* Button & Interactive styles */
+.btn-primary {
+  background: linear-gradient(135deg, #087BFF 0%, #009DFF 100%);
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(8, 123, 255, 0.35);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 32px rgba(8, 123, 255, 0.55);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: rgba(17, 24, 39, 0.7);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-secondary:hover {
+  border-color: #087BFF;
+  background: rgba(11, 18, 32, 0.9);
+  color: #009DFF;
+  transform: translateY(-2px);
+}
+
+/* Perspective utilities for 3D card tilts */
+.perspective-container {
+  perspective: 1200px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Masked text reveal helper */
+.masked-text-reveal {
+  overflow: hidden;
+}
+
+.masked-text-reveal span {
+  display: inline-block;
+  transform: translateY(110%);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.masked-text-reveal.active span {
+  transform: translateY(0%);
+}
