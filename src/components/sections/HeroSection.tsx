@@ -13,7 +13,9 @@ if (typeof window !== "undefined") {
 
 export const HeroSection: React.FC = () => {
   const containerRef = useRef<HTMLElement>(null);
+  const videoWrapperRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const darkSweepRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -21,6 +23,7 @@ export const HeroSection: React.FC = () => {
     ).matches;
 
     const ctx = gsap.context(() => {
+      // Initial load stagger
       if (!prefersReducedMotion && contentRef.current) {
         gsap.fromTo(
           contentRef.current.children,
@@ -36,12 +39,9 @@ export const HeroSection: React.FC = () => {
         );
       }
 
-      // Smooth scroll parallax exit
-      if (containerRef.current && contentRef.current) {
-        gsap.to(contentRef.current, {
-          y: -70,
-          opacity: 0,
-          ease: "none",
+      // Scroll-driven exit transition: Hero scales up and fades, dark overlay sweeps across
+      if (containerRef.current) {
+        const tl = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
             start: "top top",
@@ -49,6 +49,41 @@ export const HeroSection: React.FC = () => {
             scrub: true
           }
         });
+
+        if (videoWrapperRef.current) {
+          tl.to(
+            videoWrapperRef.current,
+            {
+              scale: 1.15,
+              opacity: 0.35,
+              ease: "none"
+            },
+            0
+          );
+        }
+
+        if (darkSweepRef.current) {
+          tl.to(
+            darkSweepRef.current,
+            {
+              opacity: 0.85,
+              ease: "none"
+            },
+            0
+          );
+        }
+
+        if (contentRef.current) {
+          tl.to(
+            contentRef.current,
+            {
+              y: -80,
+              opacity: 0,
+              ease: "none"
+            },
+            0
+          );
+        }
       }
     }, containerRef);
 
@@ -61,24 +96,35 @@ export const HeroSection: React.FC = () => {
       id="hero"
       className="relative w-screen h-screen min-h-[100svh] flex items-center justify-center overflow-hidden bg-[#070B12]"
     >
-      {/* Full-Screen Edge-to-Edge Hero Video */}
-      <CinematicVideo
-        src={VIDEOS.hero.src}
-        fallbackSrc={VIDEOS.hero.fallbackSrc}
-        poster={VIDEOS.hero.poster}
-        alt="RIGHTMOVE Cinematic Brand Vision"
-        isHero={true}
-        priority={true}
-        isFullScreen={true}
-        objectFit="cover"
-        objectPosition="center"
-        showOverlay={true}
-        overlayOpacity="bg-gradient-to-t from-[#070B12]/85 via-[#070B12]/30 to-[#070B12]/60"
-        blurGlow={false}
+      {/* Full-Screen Edge-to-Edge Hero Video Wrapper */}
+      <div
+        ref={videoWrapperRef}
+        className="absolute inset-0 w-full h-full pointer-events-none will-change-transform"
+      >
+        <CinematicVideo
+          src={VIDEOS.hero.src}
+          fallbackSrc={VIDEOS.hero.fallbackSrc}
+          poster={VIDEOS.hero.poster}
+          alt="RIGHTMOVE Cinematic Brand Vision"
+          isHero={true}
+          priority={true}
+          isFullScreen={true}
+          objectFit="cover"
+          objectPosition="center"
+          showOverlay={true}
+          overlayOpacity="bg-gradient-to-t from-[#070B12]/85 via-[#070B12]/30 to-[#070B12]/60"
+          blurGlow={false}
+        />
+      </div>
+
+      {/* Dark overlay sweep across screen on scroll */}
+      <div
+        ref={darkSweepRef}
+        className="absolute inset-0 bg-[#070B12] opacity-0 pointer-events-none z-10 transition-opacity"
       />
 
       {/* Atmospheric Electric Blue Center Glow */}
-      <div className="ambient-glow w-[650px] h-[650px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-35 pointer-events-none" />
+      <div className="ambient-glow w-[650px] h-[650px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-35 pointer-events-none z-10" />
 
       {/* Minimal Hero Text - Strict to requirements */}
       <div

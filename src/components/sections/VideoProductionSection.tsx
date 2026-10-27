@@ -13,25 +13,72 @@ if (typeof window !== "undefined") {
 
 export const VideoProductionSection: React.FC = () => {
   const containerRef = useRef<HTMLElement>(null);
+  const videoWrapperRef = useRef<HTMLDivElement>(null);
+  const darkLayerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const slateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
+    const videoWrapper = videoWrapperRef.current;
+    const darkLayer = darkLayerRef.current;
     const text = textRef.current;
     const slate = slateRef.current;
-    if (!container) return;
+    if (!container || !videoWrapper) return;
 
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
     if (prefersReducedMotion) return;
 
+    const isMobile = window.innerWidth < 768;
+
     const ctx = gsap.context(() => {
+      // 1. Cinematic Focus & Parallax Scrub Timeline
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container,
+          start: "top bottom",
+          end: "center center",
+          scrub: 1.2
+        }
+      });
+
+      // Defocus-to-sharp & subtle parallax scale
+      tl.fromTo(
+        videoWrapper,
+        {
+          scale: 1.12,
+          y: 60,
+          filter: isMobile
+            ? "brightness(0.35)"
+            : "blur(12px) brightness(0.5)"
+        },
+        {
+          scale: 1.0,
+          y: 0,
+          filter: isMobile
+            ? "brightness(1.0)"
+            : "blur(0px) brightness(1.0)",
+          ease: "power2.out"
+        }
+      );
+
+      // Dark overlay fade-out to let the scene emerge
+      if (darkLayer) {
+        tl.fromTo(
+          darkLayer,
+          { opacity: 0.8 },
+          { opacity: 0, ease: "power1.out" },
+          0
+        );
+      }
+
+      // 2. Minimal Headline & Studio Slate entrance
       if (text) {
         gsap.fromTo(
           text,
-          { opacity: 0, y: 50 },
+          { opacity: 0, y: 40 },
           {
             opacity: 1,
             y: 0,
@@ -39,7 +86,7 @@ export const VideoProductionSection: React.FC = () => {
             ease: "power2.out",
             scrollTrigger: {
               trigger: container,
-              start: "top 60%",
+              start: "top 45%",
               toggleActions: "play none none reverse"
             }
           }
@@ -49,7 +96,7 @@ export const VideoProductionSection: React.FC = () => {
       if (slate) {
         gsap.fromTo(
           slate,
-          { opacity: 0, y: 30 },
+          { opacity: 0, y: 25 },
           {
             opacity: 1,
             y: 0,
@@ -57,7 +104,7 @@ export const VideoProductionSection: React.FC = () => {
             ease: "power2.out",
             scrollTrigger: {
               trigger: container,
-              start: "top 50%",
+              start: "top 35%",
               toggleActions: "play none none reverse"
             }
           }
@@ -74,18 +121,29 @@ export const VideoProductionSection: React.FC = () => {
       id="visual-storytelling"
       className="relative w-screen h-screen min-h-[100svh] flex flex-col justify-between p-6 sm:p-12 lg:p-16 overflow-hidden bg-[#070B12]"
     >
-      {/* Full-Screen Edge-to-Edge Background Video */}
-      <CinematicVideo
-        src={VIDEOS.videoProduction.src}
-        fallbackSrc={VIDEOS.videoProduction.fallbackSrc}
-        poster={VIDEOS.videoProduction.poster}
-        alt="Studio Film and Video Production"
-        isFullScreen={true}
-        objectFit="cover"
-        objectPosition="center"
-        showOverlay={true}
-        overlayOpacity="bg-gradient-to-t from-[#070B12]/80 via-transparent to-[#070B12]/50"
-      />
+      {/* Defocus-to-Sharp Parallax Video Wrapper */}
+      <div
+        ref={videoWrapperRef}
+        className="absolute inset-0 w-full h-full overflow-hidden will-change-transform"
+      >
+        <CinematicVideo
+          src={VIDEOS.videoProduction.src}
+          fallbackSrc={VIDEOS.videoProduction.fallbackSrc}
+          poster={VIDEOS.videoProduction.poster}
+          alt="Studio Film and Video Production"
+          isFullScreen={true}
+          objectFit="cover"
+          objectPosition="center"
+          showOverlay={true}
+          overlayOpacity="bg-gradient-to-t from-[#070B12]/80 via-transparent to-[#070B12]/50"
+        />
+
+        {/* Dynamic Dark Fade Overlay */}
+        <div
+          ref={darkLayerRef}
+          className="absolute inset-0 bg-[#070B12] pointer-events-none z-10"
+        />
+      </div>
 
       {/* Top Label */}
       <div className="relative z-20 flex items-center justify-between w-full pointer-events-none">
@@ -125,3 +183,4 @@ export const VideoProductionSection: React.FC = () => {
     </section>
   );
 };
+

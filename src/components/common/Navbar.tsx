@@ -20,7 +20,7 @@ export const Navbar: React.FC = () => {
   }, []);
 
   const navLinks = [
-    { label: "Work", href: "#brand-advertising" },
+    { label: "Work", href: "#our-work" },
     { label: "Services", href: "#services-overview" },
     { label: "Contact", href: "#contact" }
   ];

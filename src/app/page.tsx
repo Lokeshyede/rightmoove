@@ -5,42 +5,33 @@ import { WebDevelopmentSection } from "@/components/sections/WebDevelopmentSecti
 import { VideoProductionSection } from "@/components/sections/VideoProductionSection";
 import { BusinessTransformationSection } from "@/components/sections/BusinessTransformationSection";
 import { FinalCtaSection } from "@/components/sections/FinalCtaSection";
-import { PortfolioGallery } from "@/components/sections/PortfolioGallery";
+import { OurWorkSection } from "@/components/sections/OurWorkSection";
 import { ServicesOverview } from "@/components/sections/ServicesOverview";
+import { PortfolioGallery } from "@/components/sections/PortfolioGallery";
 import { ContactSection } from "@/components/sections/ContactSection";
 
 export default function Home() {
   return (
     <div className="relative w-full overflow-hidden bg-[#070B12]">
-      {/* 01. Scene 1 — Brand Introduction (Full-Screen hero.mp4) */}
+      {/* 1. Existing Hero and Cinematic Video Sections (Scenes 01 - 07) */}
       <HeroSection />
-
-      {/* 02. Scene 2 — Brand Advertising (Full-Screen brand-advertising.mp4) */}
       <BrandAdvertisingSection />
-
-      {/* 03. Scene 3 — Social Media & Performance (Full-Screen social-media.mp4) */}
       <SocialMediaSection />
-
-      {/* 04. Scene 4 — Digital Experiences (Full-Screen web-development.mp4) */}
       <WebDevelopmentSection />
-
-      {/* 05. Scene 5 — Video Production (Full-Screen video-production.mp4) */}
       <VideoProductionSection />
-
-      {/* 06. Scene 6 — Business Transformation (Full-Screen business-transformation.mp4) */}
       <BusinessTransformationSection />
-
-      {/* 07. Scene 7 — Final Contact Scene (Full-Screen final-cta.mp4) */}
       <FinalCtaSection />
 
-      {/* 08. Compact Editorial Portfolio Gallery */}
-      <PortfolioGallery />
+      {/* 2. OUR WORK — Two Full-Width Cinematic Video Showcases */}
+      <OurWorkSection />
 
-      {/* 09. Short List of Disciplines / Services */}
+      {/* 3. DISCIPLINES / SERVICES */}
       <ServicesOverview />
 
-      {/* 10. Minimal Contact Form */}
+      {/* 4. Remaining Existing Sections */}
+      <PortfolioGallery />
       <ContactSection />
     </div>
   );
 }
+

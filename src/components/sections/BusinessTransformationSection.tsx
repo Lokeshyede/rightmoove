@@ -13,25 +13,84 @@ if (typeof window !== "undefined") {
 
 export const BusinessTransformationSection: React.FC = () => {
   const containerRef = useRef<HTMLElement>(null);
+  const videoWrapperRef = useRef<HTMLDivElement>(null);
+  const shutterTopRef = useRef<HTMLDivElement>(null);
+  const shutterBottomRef = useRef<HTMLDivElement>(null);
+  const sweepLineRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
+    const videoWrapper = videoWrapperRef.current;
+    const shutterTop = shutterTopRef.current;
+    const shutterBottom = shutterBottomRef.current;
+    const sweepLine = sweepLineRef.current;
     const text = textRef.current;
     const pill = pillRef.current;
-    if (!container) return;
+    if (!container || !videoWrapper) return;
 
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
     if (prefersReducedMotion) return;
 
+    const isMobile = window.innerWidth < 768;
+
     const ctx = gsap.context(() => {
+      // 1. Layered Dark Shutter Wipe Timeline
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container,
+          start: "top bottom",
+          end: "center center",
+          scrub: 1.2
+        }
+      });
+
+      // Video scale settles gracefully into full screen
+      tl.fromTo(
+        videoWrapper,
+        { scale: 1.08 },
+        { scale: 1.0, ease: "power2.out" },
+        0
+      );
+
+      // Top shutter wipes diagonally to the left
+      if (shutterTop) {
+        tl.fromTo(
+          shutterTop,
+          { xPercent: 0, yPercent: 0 },
+          { xPercent: isMobile ? -100 : -102, yPercent: isMobile ? 0 : -15, ease: "power2.inOut" },
+          0
+        );
+      }
+
+      // Bottom shutter wipes diagonally to the right
+      if (shutterBottom) {
+        tl.fromTo(
+          shutterBottom,
+          { xPercent: 0, yPercent: 0 },
+          { xPercent: isMobile ? 100 : 102, yPercent: isMobile ? 0 : 15, ease: "power2.inOut" },
+          0
+        );
+      }
+
+      // Electric-blue light sweep line traversing along the parting boundary
+      if (sweepLine) {
+        tl.fromTo(
+          sweepLine,
+          { opacity: 1, scaleY: 1, xPercent: -50 },
+          { opacity: 0, scaleY: 1.2, xPercent: 50, ease: "power1.in" },
+          "-=0.5"
+        );
+      }
+
+      // 2. Minimal Headline & Bottom Pill entrance
       if (text) {
         gsap.fromTo(
           text,
-          { opacity: 0, y: 50 },
+          { opacity: 0, y: 40 },
           {
             opacity: 1,
             y: 0,
@@ -39,7 +98,7 @@ export const BusinessTransformationSection: React.FC = () => {
             ease: "power2.out",
             scrollTrigger: {
               trigger: container,
-              start: "top 60%",
+              start: "top 45%",
               toggleActions: "play none none reverse"
             }
           }
@@ -49,7 +108,7 @@ export const BusinessTransformationSection: React.FC = () => {
       if (pill) {
         gsap.fromTo(
           pill,
-          { opacity: 0, y: 30 },
+          { opacity: 0, y: 25 },
           {
             opacity: 1,
             y: 0,
@@ -57,7 +116,7 @@ export const BusinessTransformationSection: React.FC = () => {
             ease: "power2.out",
             scrollTrigger: {
               trigger: container,
-              start: "top 50%",
+              start: "top 35%",
               toggleActions: "play none none reverse"
             }
           }
@@ -74,17 +133,40 @@ export const BusinessTransformationSection: React.FC = () => {
       id="brands-in-motion"
       className="relative w-screen h-screen min-h-[100svh] flex flex-col justify-between p-6 sm:p-12 lg:p-16 overflow-hidden bg-[#070B12]"
     >
-      {/* Full-Screen Edge-to-Edge Background Video */}
-      <CinematicVideo
-        src={VIDEOS.businessTransformation.src}
-        fallbackSrc={VIDEOS.businessTransformation.fallbackSrc}
-        poster={VIDEOS.businessTransformation.poster}
-        alt="Business Transformation E-Commerce Redesign"
-        isFullScreen={true}
-        objectFit="cover"
-        objectPosition="center"
-        showOverlay={true}
-        overlayOpacity="bg-gradient-to-t from-[#070B12]/80 via-transparent to-[#070B12]/50"
+      {/* Settling Full-Screen Video Wrapper */}
+      <div
+        ref={videoWrapperRef}
+        className="absolute inset-0 w-full h-full overflow-hidden will-change-transform"
+      >
+        <CinematicVideo
+          src={VIDEOS.businessTransformation.src}
+          fallbackSrc={VIDEOS.businessTransformation.fallbackSrc}
+          poster={VIDEOS.businessTransformation.poster}
+          alt="Business Transformation E-Commerce Redesign"
+          isFullScreen={true}
+          objectFit="cover"
+          objectPosition="center"
+          showOverlay={true}
+          overlayOpacity="bg-gradient-to-t from-[#070B12]/85 via-transparent to-[#070B12]/50"
+        />
+      </div>
+
+      {/* Layer 1: Top Diagonal Dark Shutter Mask */}
+      <div
+        ref={shutterTopRef}
+        className="absolute inset-0 w-full h-[60%] bg-[#0B1220] z-10 pointer-events-none origin-top-left will-change-transform shadow-[0_15px_40px_rgba(0,0,0,0.9)]"
+      />
+
+      {/* Layer 2: Bottom Diagonal Dark Shutter Mask */}
+      <div
+        ref={shutterBottomRef}
+        className="absolute bottom-0 left-0 right-0 w-full h-[60%] bg-[#070B12] z-10 pointer-events-none origin-bottom-right will-change-transform shadow-[0_-15px_40px_rgba(0,0,0,0.9)]"
+      />
+
+      {/* Electric-Blue Sweep Line traversing the parting seam */}
+      <div
+        ref={sweepLineRef}
+        className="absolute top-1/2 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#009DFF] to-transparent shadow-[0_0_25px_#087BFF,0_0_50px_#009DFF] pointer-events-none z-15 opacity-0"
       />
 
       {/* Top Label */}
@@ -125,3 +207,4 @@ export const BusinessTransformationSection: React.FC = () => {
     </section>
   );
 };
+

@@ -13,25 +13,80 @@ if (typeof window !== "undefined") {
 
 export const WebDevelopmentSection: React.FC = () => {
   const containerRef = useRef<HTMLElement>(null);
+  const maskWrapperRef = useRef<HTMLDivElement>(null);
+  const videoInnerRef = useRef<HTMLDivElement>(null);
+  const scanBeamRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const hudRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
+    const mask = maskWrapperRef.current;
+    const videoInner = videoInnerRef.current;
+    const scanBeam = scanBeamRef.current;
     const text = textRef.current;
     const hud = hudRef.current;
-    if (!container) return;
+    if (!container || !mask) return;
 
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
     if (prefersReducedMotion) return;
 
+    const isMobile = window.innerWidth < 768;
+
     const ctx = gsap.context(() => {
+      // 1. Bottom-to-Top Vertical Reveal Timeline
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container,
+          start: "top bottom",
+          end: "center center",
+          scrub: 1.2
+        }
+      });
+
+      // Background subtle transition from black -> deep navy -> black
+      tl.fromTo(
+        container,
+        { backgroundColor: "#070B12" },
+        { backgroundColor: "#0B1220", ease: "power1.inOut" },
+        0
+      );
+
+      // Reveal incoming scene from bottom to top using clipping mask
+      tl.fromTo(
+        mask,
+        { clipPath: isMobile ? "inset(40% 0% 0% 0%)" : "inset(100% 0% 0% 0%)" },
+        { clipPath: "inset(0% 0% 0% 0%)", ease: "power2.out" },
+        0
+      );
+
+      // Vertical camera movement & scale settling
+      if (videoInner) {
+        tl.fromTo(
+          videoInner,
+          { y: 80, scale: 1.08 },
+          { y: 0, scale: 1.0, ease: "power2.out" },
+          0
+        );
+      }
+
+      // Electric-blue scanning beam at the leading mask edge
+      if (scanBeam) {
+        tl.fromTo(
+          scanBeam,
+          { opacity: 1, scaleX: 0.8 },
+          { opacity: 0, scaleX: 1.2, ease: "power2.in" },
+          "-=0.4"
+        );
+      }
+
+      // 2. Minimal Headline & HUD entrance
       if (text) {
         gsap.fromTo(
           text,
-          { opacity: 0, y: 50 },
+          { opacity: 0, y: 40 },
           {
             opacity: 1,
             y: 0,
@@ -39,7 +94,7 @@ export const WebDevelopmentSection: React.FC = () => {
             ease: "power2.out",
             scrollTrigger: {
               trigger: container,
-              start: "top 60%",
+              start: "top 45%",
               toggleActions: "play none none reverse"
             }
           }
@@ -49,7 +104,7 @@ export const WebDevelopmentSection: React.FC = () => {
       if (hud) {
         gsap.fromTo(
           hud,
-          { opacity: 0, y: 40, scale: 0.95 },
+          { opacity: 0, y: 30, scale: 0.96 },
           {
             opacity: 1,
             y: 0,
@@ -58,7 +113,7 @@ export const WebDevelopmentSection: React.FC = () => {
             ease: "power2.out",
             scrollTrigger: {
               trigger: container,
-              start: "top 50%",
+              start: "top 35%",
               toggleActions: "play none none reverse"
             }
           }
@@ -75,18 +130,36 @@ export const WebDevelopmentSection: React.FC = () => {
       id="digital-experiences"
       className="relative w-screen h-screen min-h-[100svh] flex flex-col justify-between p-6 sm:p-12 lg:p-16 overflow-hidden bg-[#070B12]"
     >
-      {/* Full-Screen Edge-to-Edge Background Video */}
-      <CinematicVideo
-        src={VIDEOS.webDevelopment.src}
-        fallbackSrc={VIDEOS.webDevelopment.fallbackSrc}
-        poster={VIDEOS.webDevelopment.poster}
-        alt="Web and Mobile App Engineering"
-        isFullScreen={true}
-        objectFit="cover"
-        objectPosition="center"
-        showOverlay={true}
-        overlayOpacity="bg-gradient-to-t from-[#070B12]/80 via-transparent to-[#070B12]/50"
-      />
+      {/* Bottom-to-Top Vertical Clipping Mask Wrapper */}
+      <div
+        ref={maskWrapperRef}
+        className="absolute inset-0 w-full h-full overflow-hidden will-change-transform"
+        style={{ clipPath: "inset(0% 0% 0% 0%)" }}
+      >
+        <div
+          ref={videoInnerRef}
+          className="absolute inset-0 w-full h-full will-change-transform"
+        >
+          {/* Full-Screen Edge-to-Edge Background Video */}
+          <CinematicVideo
+            src={VIDEOS.webDevelopment.src}
+            fallbackSrc={VIDEOS.webDevelopment.fallbackSrc}
+            poster={VIDEOS.webDevelopment.poster}
+            alt="Web and Mobile App Engineering"
+            isFullScreen={true}
+            objectFit="cover"
+            objectPosition="center"
+            showOverlay={true}
+            overlayOpacity="bg-gradient-to-t from-[#070B12]/85 via-transparent to-[#070B12]/50"
+          />
+        </div>
+
+        {/* Electric-Blue Leading Edge Scanning Beam */}
+        <div
+          ref={scanBeamRef}
+          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#009DFF] to-transparent shadow-[0_0_20px_#087BFF,0_0_40px_#009DFF] pointer-events-none z-10 opacity-0"
+        />
+      </div>
 
       {/* Top Label */}
       <div className="relative z-20 flex items-center justify-between w-full pointer-events-none">
@@ -127,3 +200,4 @@ export const WebDevelopmentSection: React.FC = () => {
     </section>
   );
 };
+
