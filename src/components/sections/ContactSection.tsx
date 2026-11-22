@@ -10,6 +10,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { SITE_CONFIG } from "@/config/site";
+import { trackPixelEvent } from "@/lib/fpixel";
 
 export const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -17,7 +18,7 @@ export const ContactSection: React.FC = () => {
     businessName: "",
     email: "",
     phone: "",
-    service: "Brand Advertising",
+    service: "Meta Ads",
     description: ""
   });
 
@@ -48,6 +49,14 @@ export const ContactSection: React.FC = () => {
     setIsSubmitting(true);
     try {
       await new Promise((res) => setTimeout(res, 600));
+
+      // Trigger Meta Pixel Lead event
+      trackPixelEvent("Lead", {
+        content_name: formData.service,
+        content_category: "Homepage Form Submission",
+        business_name: formData.businessName
+      });
+
       setSubmittedPayload({ ...formData });
     } finally {
       setIsSubmitting(false);
@@ -61,10 +70,17 @@ export const ContactSection: React.FC = () => {
       businessName: "",
       email: "",
       phone: "",
-      service: "Brand Advertising",
+      service: "Meta Ads",
       description: ""
     });
     setErrors({});
+  };
+
+  const handleContactChannelClick = (channel: string) => {
+    trackPixelEvent("Contact", {
+      channel,
+      source: "Homepage Contact Section"
+    });
   };
 
   return (
@@ -88,7 +104,7 @@ export const ContactSection: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-          {/* Minimal Form */}
+          {/* Form */}
           <div className="lg:col-span-7 rounded-2xl p-6 sm:p-8 bg-[#0B1220]/70 border border-white/10 backdrop-blur-xl">
             {submittedPayload ? (
               <div className="flex flex-col items-center text-center py-6">
@@ -96,20 +112,11 @@ export const ContactSection: React.FC = () => {
                   <CheckCircle2 className="w-7 h-7 text-[#087BFF]" />
                 </div>
                 <h3 className="text-xl font-bold font-heading text-white">
-                  Inquiry Prepared
+                  Inquiry Received
                 </h3>
                 <p className="mt-2 text-xs sm:text-sm text-[#A7B0C0] max-w-sm">
                   Thank you, <strong className="text-white">{submittedPayload.fullName}</strong>. Your project brief has been recorded.
                 </p>
-
-                <div className="mt-5 p-3.5 rounded-xl bg-[#070B12] border border-amber-500/30 text-left w-full text-xs text-[#A7B0C0]">
-                  <p className="font-semibold text-amber-400 flex items-center gap-1.5 mb-1">
-                    <AlertCircle className="w-3.5 h-3.5" /> Integration Boundary
-                  </p>
-                  <p className="text-[11px]">
-                    Form captured on client. Connect your CRM or API endpoint to receive submissions live.
-                  </p>
-                </div>
 
                 <div className="mt-6 flex flex-wrap gap-3 justify-center">
                   <a
@@ -120,6 +127,7 @@ export const ContactSection: React.FC = () => {
                     )}.`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => handleContactChannelClick("whatsapp_handoff")}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-mono font-semibold uppercase btn-primary"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
@@ -249,6 +257,7 @@ export const ContactSection: React.FC = () => {
               href={SITE_CONFIG.contacts.whatsapp}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => handleContactChannelClick("whatsapp_direct")}
               className="p-5 rounded-2xl bg-[#0B1220]/70 border border-white/10 hover:border-[#087BFF]/50 transition-colors flex items-center gap-4 group"
             >
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
@@ -267,6 +276,7 @@ export const ContactSection: React.FC = () => {
 
             <a
               href={`mailto:${SITE_CONFIG.contacts.email}`}
+              onClick={() => handleContactChannelClick("email_direct")}
               className="p-5 rounded-2xl bg-[#0B1220]/70 border border-white/10 hover:border-[#087BFF]/50 transition-colors flex items-center gap-4 group"
             >
               <div className="w-10 h-10 rounded-xl bg-[#087BFF]/10 text-[#009DFF] flex items-center justify-center group-hover:bg-[#087BFF] group-hover:text-white transition-colors">

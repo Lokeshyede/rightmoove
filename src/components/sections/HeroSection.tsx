@@ -132,7 +132,7 @@ export const HeroSection: React.FC = () => {
         className="relative z-20 max-w-5xl mx-auto px-6 text-center flex flex-col items-center"
       >
         <span className="text-xs sm:text-sm font-mono tracking-[0.3em] uppercase text-[#009DFF] mb-4 drop-shadow-[0_0_15px_rgba(8,123,255,0.6)]">
-          RIGHTMOVE
+          RIGHTMOVE // DIGITAL MARKETING &amp; META ADS AGENCY
         </span>
 
         <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black font-heading text-white tracking-tight leading-[1.02]">
